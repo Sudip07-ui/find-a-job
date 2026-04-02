@@ -1,6 +1,6 @@
 const jwt = require('jsonwebtoken');
 
-const protect = async (req, res, next) => {
+const protect = (req, res, next) => {
   let token;
 
   if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
@@ -8,7 +8,10 @@ const protect = async (req, res, next) => {
   }
 
   if (!token) {
-    return res.status(401).json({ message: 'Not authorized, no token' });
+    return res.status(401).json({ 
+      success: false, 
+      message: 'Not authorized, no token' 
+    });
   }
 
   try {
@@ -16,14 +19,20 @@ const protect = async (req, res, next) => {
     req.user = decoded;
     next();
   } catch (error) {
-    res.status(401).json({ message: 'Not authorized, token failed' });
+    res.status(401).json({ 
+      success: false, 
+      message: 'Not authorized, token failed' 
+    });
   }
 };
 
 const authorize = (...roles) => {
   return (req, res, next) => {
     if (!roles.includes(req.user.role)) {
-      return res.status(403).json({ message: `Role ${req.user.role} is not authorized` });
+      return res.status(403).json({ 
+        success: false, 
+        message: `Role (${req.user.role}) is not authorized to access this route` 
+      });
     }
     next();
   };
