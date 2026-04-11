@@ -354,6 +354,7 @@ export default function JobPortal() {
               className="w-full py-3 bg-gray-800 text-white rounded-2xl font-medium"
             >
               Close
+              ijnnpnipn
             </button>
           </div>
         </div>
