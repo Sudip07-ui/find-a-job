@@ -17,14 +17,24 @@ interface Job {
 }
 
 export default function JobPortal() {
+  // Auth States
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [currentUser, setCurrentUser] = useState<any>(null);
+  const [showAuthModal, setShowAuthModal] = useState(false);
+  const [isLoginMode, setIsLoginMode] = useState(true);
+
+  // Form States
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [role, setRole] = useState<'seeker' | 'employer'>('seeker');
+
+  // Filters
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedLocation, setSelectedLocation] = useState('All');
   const [selectedTypes, setSelectedTypes] = useState<string[]>([]);
   const [selectedSkills, setSelectedSkills] = useState<string[]>([]);
   const [selectedJob, setSelectedJob] = useState<Job | null>(null);
-  const [showPostJob, setShowPostJob] = useState(false);
-  const [showChat, setShowChat] = useState(false);
-  const [chatMessage, setChatMessage] = useState('');
 
   const jobs: Job[] = [
     { 
@@ -36,8 +46,8 @@ export default function JobPortal() {
       type: "Full-time", 
       posted: "2 days ago", 
       logo: "💼", 
-      description: "Looking for experienced React developer with modern UI skills.",
-      skills: ["React", "Tailwind", "JavaScript"]
+      description: "React + Tailwind developer needed.", 
+      skills: ["React", "Tailwind", "JavaScript"] 
     },
     { 
       id: 2, 
@@ -48,8 +58,8 @@ export default function JobPortal() {
       type: "Full-time", 
       posted: "1 day ago", 
       logo: "📢", 
-      description: "Handle social media campaigns and content creation.",
-      skills: ["Marketing", "Social Media", "SEO"]
+      description: "Social media and campaign expert needed.", 
+      skills: ["Marketing", "SEO", "Social Media"] 
     },
     { 
       id: 3, 
@@ -60,8 +70,8 @@ export default function JobPortal() {
       type: "Full-time", 
       posted: "5 hours ago", 
       logo: "💻", 
-      description: "Build scalable REST APIs using Node.js and MongoDB.",
-      skills: ["Node.js", "MongoDB", "Express"]
+      description: "Build scalable REST APIs.", 
+      skills: ["Node.js", "MongoDB", "Express"] 
     },
     { 
       id: 4, 
@@ -72,69 +82,69 @@ export default function JobPortal() {
       type: "Full-time", 
       posted: "3 days ago", 
       logo: "📊", 
-      description: "Manage accounts, taxation and financial reporting.",
-      skills: ["Accounting", "Tally", "Taxation"]
-    },
-    { 
-      id: 5, 
-      title: "UI/UX Designer", 
-      company: "Creative Minds", 
-      location: "Kathmandu", 
-      salary: "35,000 - 55,000 NPR", 
-      type: "Full-time", 
-      posted: "Yesterday", 
-      logo: "🎨", 
-      description: "Design beautiful user interfaces for mobile and web apps.",
-      skills: ["Figma", "UI/UX", "Adobe XD"]
+      description: "Handle accounts and taxation.", 
+      skills: ["Accounting", "Tally"] 
     },
   ];
 
-  const allSkills = ["React", "Node.js", "Tailwind", "Marketing", "Social Media", "MongoDB", "Accounting", "Figma", "JavaScript", "SEO"];
+  const allSkills = ["React", "Node.js", "Tailwind", "Marketing", "SEO", "MongoDB", "Accounting", "Figma", "JavaScript"];
 
-  // Filter jobs
+  // Apply Filters
   const filteredJobs = jobs.filter(job => {
-    const matchesSearch = 
-      job.title.toLowerCase().includes(searchTerm.toLowerCase()) || 
-      job.company.toLowerCase().includes(searchTerm.toLowerCase());
-
+    const matchesSearch = job.title.toLowerCase().includes(searchTerm.toLowerCase()) || 
+                         job.company.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesLocation = selectedLocation === 'All' || job.location === selectedLocation;
     const matchesType = selectedTypes.length === 0 || selectedTypes.includes(job.type);
-    const matchesSkill = selectedSkills.length === 0 || 
-      selectedSkills.some(skill => job.skills.includes(skill));
+    const matchesSkill = selectedSkills.length === 0 || selectedSkills.some(s => job.skills.includes(s));
 
     return matchesSearch && matchesLocation && matchesType && matchesSkill;
   });
 
-  const toggleJobType = (type: string) => {
-    if (selectedTypes.includes(type)) {
-      setSelectedTypes(selectedTypes.filter(t => t !== type));
-    } else {
-      setSelectedTypes([...selectedTypes, type]);
-    }
+  const toggleType = (type: string) => {
+    setSelectedTypes(prev => prev.includes(type) ? prev.filter(t => t !== type) : [...prev, type]);
   };
 
   const toggleSkill = (skill: string) => {
-    if (selectedSkills.includes(skill)) {
-      setSelectedSkills(selectedSkills.filter(s => s !== skill));
-    } else {
-      setSelectedSkills([...selectedSkills, skill]);
-    }
+    setSelectedSkills(prev => prev.includes(skill) ? prev.filter(s => s !== skill) : [...prev, skill]);
   };
 
+  // Handle Apply Button
   const handleApply = (job: Job) => {
-    alert(`✅ Application submitted for "${job.title}" at ${job.company}!\n\nWe will contact you soon.`);
+    if (!isLoggedIn) {
+      alert("You need to login or register to apply for this job.");
+      setShowAuthModal(true);
+    } else {
+      alert(`✅ Application submitted for "${job.title}" at ${job.company}!\n\nWe will contact you soon.`);
+    }
   };
 
-  const sendChatMessage = () => {
-    if (chatMessage.trim()) {
-      alert(`Chatbot: Thank you for your message! Our team will reply soon. 😊\n\nYou said: "${chatMessage}"`);
-      setChatMessage('');
+  // Handle Login / Register
+  const handleAuth = () => {
+    if (!email || !password) {
+      alert("Please fill email and password");
+      return;
     }
+
+    const user = {
+      name: name || "User",
+      email,
+      role: role
+    };
+
+    setCurrentUser(user);
+    setIsLoggedIn(true);
+    setShowAuthModal(false);
+    alert(`✅ ${isLoginMode ? 'Login' : 'Registration'} successful as ${role}!`);
+  };
+
+  const logout = () => {
+    setIsLoggedIn(false);
+    setCurrentUser(null);
   };
 
   return (
-    <div className="flex h-screen bg-gray-100 relative">
-      {/* Sidebar Filters */}
+    <div className="flex h-screen bg-gray-100">
+      {/* Sidebar - Filters */}
       <div className="w-72 bg-white border-r p-6 overflow-y-auto">
         <div className="flex items-center gap-3 mb-8">
           <div className="w-10 h-10 bg-blue-600 rounded-2xl flex items-center justify-center text-white font-bold text-2xl">J</div>
@@ -143,16 +153,15 @@ export default function JobPortal() {
 
         <input
           type="text"
-          placeholder="Search jobs or companies..."
+          placeholder="Search jobs..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
-          className="w-full px-4 py-3 border rounded-2xl focus:outline-none focus:border-blue-500 mb-6"
+          className="w-full px-4 py-3 border rounded-2xl mb-6"
         />
 
-        {/* Location */}
         <h3 className="font-semibold mb-3">Location</h3>
         <select 
-          value={selectedLocation}
+          value={selectedLocation} 
           onChange={(e) => setSelectedLocation(e.target.value)}
           className="w-full p-3 border rounded-2xl mb-8"
         >
@@ -163,7 +172,6 @@ export default function JobPortal() {
           <option value="Bharatpur">Bharatpur</option>
         </select>
 
-        {/* Job Type */}
         <h3 className="font-semibold mb-3">Job Type</h3>
         <div className="space-y-3 mb-8">
           {['Full-time', 'Part-time', 'Internship', 'Remote'].map(type => (
@@ -171,15 +179,14 @@ export default function JobPortal() {
               <input 
                 type="checkbox" 
                 checked={selectedTypes.includes(type)}
-                onChange={() => toggleJobType(type)}
-                className="w-5 h-5 accent-blue-600"
+                onChange={() => toggleType(type)}
+                className="accent-blue-600"
               />
               <span>{type}</span>
             </label>
           ))}
         </div>
 
-        {/* Skill Filter - New */}
         <h3 className="font-semibold mb-3">Skills</h3>
         <div className="flex flex-wrap gap-2">
           {allSkills.map(skill => (
@@ -187,9 +194,7 @@ export default function JobPortal() {
               key={skill}
               onClick={() => toggleSkill(skill)}
               className={`px-4 py-1.5 text-sm rounded-full border transition-all ${
-                selectedSkills.includes(skill) 
-                  ? 'bg-blue-600 text-white border-blue-600' 
-                  : 'bg-white border-gray-300 hover:bg-gray-100'
+                selectedSkills.includes(skill) ? 'bg-blue-600 text-white' : 'hover:bg-gray-100'
               }`}
             >
               {skill}
@@ -198,61 +203,40 @@ export default function JobPortal() {
         </div>
       </div>
 
-      {/* Job Listings */}
+      {/* Job List */}
       <div className="flex-1 p-8 overflow-y-auto">
         <div className="flex justify-between items-center mb-8">
-          <h2 className="text-3xl font-semibold">
-            {filteredJobs.length} Jobs Found
-          </h2>
-          <button 
-            onClick={() => setShowPostJob(true)}
-            className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-2xl font-medium flex items-center gap-2"
-          >
-            + Post a Job
-          </button>
+          <h2 className="text-3xl font-semibold">{filteredJobs.length} Jobs Found</h2>
         </div>
 
         <div className="space-y-4">
-          {filteredJobs.length > 0 ? (
-            filteredJobs.map(job => (
-              <div
-                key={job.id}
-                onClick={() => setSelectedJob(job)}
-                className={`bg-white p-6 rounded-3xl border cursor-pointer hover:border-blue-400 transition-all ${selectedJob?.id === job.id ? 'border-blue-500 shadow' : 'border-gray-200'}`}
-              >
-                <div className="flex gap-5">
-                  <div className="text-4xl flex-shrink-0">{job.logo}</div>
-                  <div className="flex-1">
-                    <h3 className="font-semibold text-xl">{job.title}</h3>
-                    <p className="text-gray-600">{job.company}</p>
-                    <div className="flex gap-5 mt-4 text-sm text-gray-500">
-                      <span>📍 {job.location}</span>
-                      <span>💰 {job.salary}</span>
-                      <span>🕒 {job.posted}</span>
-                    </div>
-                    <div className="flex flex-wrap gap-2 mt-3">
-                      {job.skills.slice(0, 3).map(skill => (
-                        <span key={skill} className="text-xs bg-gray-100 px-3 py-1 rounded-full">
-                          {skill}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                  <div>
-                    <span className="inline-block px-4 py-1.5 bg-green-100 text-green-700 text-xs font-medium rounded-full">
-                      {job.type}
-                    </span>
+          {filteredJobs.map(job => (
+            <div
+              key={job.id}
+              onClick={() => setSelectedJob(job)}
+              className={`bg-white p-6 rounded-3xl border cursor-pointer hover:border-blue-400 transition-all ${selectedJob?.id === job.id ? 'border-blue-500 shadow' : 'border-gray-200'}`}
+            >
+              <div className="flex gap-5">
+                <div className="text-4xl">{job.logo}</div>
+                <div className="flex-1">
+                  <h3 className="font-semibold text-xl">{job.title}</h3>
+                  <p className="text-gray-600">{job.company}</p>
+                  <div className="flex gap-5 mt-4 text-sm text-gray-500">
+                    <span>📍 {job.location}</span>
+                    <span>💰 {job.salary}</span>
+                    <span>🕒 {job.posted}</span>
                   </div>
                 </div>
+                <span className="px-4 py-1.5 bg-green-100 text-green-700 text-xs font-medium rounded-full self-start">
+                  {job.type}
+                </span>
               </div>
-            ))
-          ) : (
-            <p className="text-center text-gray-500 py-20">No jobs found. Try changing filters.</p>
-          )}
+            </div>
+          ))}
         </div>
       </div>
 
-      {/* Job Details Panel */}
+      {/* Job Details */}
       <div className="w-96 bg-white border-l p-8 overflow-y-auto">
         {selectedJob ? (
           <div>
@@ -264,98 +248,105 @@ export default function JobPortal() {
               </div>
             </div>
 
-            <div className="space-y-8">
+            <div className="space-y-6">
               <div>
-                <p className="text-xs uppercase tracking-widest text-gray-500 mb-1">Salary</p>
+                <p className="text-sm text-gray-500">Salary</p>
                 <p className="text-3xl font-semibold text-green-600">{selectedJob.salary}</p>
               </div>
-
               <div>
-                <p className="text-xs uppercase tracking-widest text-gray-500 mb-1">Location</p>
-                <p className="text-xl font-medium">{selectedJob.location}</p>
+                <p className="text-sm text-gray-500">Location</p>
+                <p className="font-medium">{selectedJob.location}</p>
               </div>
 
-              <div>
-                <p className="text-xs uppercase tracking-widest text-gray-500 mb-2">Skills Required</p>
-                <div className="flex flex-wrap gap-2">
-                  {selectedJob.skills.map(skill => (
-                    <span key={skill} className="bg-blue-100 text-blue-700 px-4 py-1 rounded-full text-sm">
-                      {skill}
-                    </span>
-                  ))}
-                </div>
-              </div>
-
-              <div>
-                <p className="text-xs uppercase tracking-widest text-gray-500 mb-2">Description</p>
-                <p className="text-gray-700 leading-relaxed">{selectedJob.description}</p>
-              </div>
-
-              <button
+              <button 
                 onClick={() => handleApply(selectedJob)}
-                className="w-full py-4 bg-blue-600 hover:bg-blue-700 text-white rounded-2xl font-semibold text-lg transition"
+                className="w-full bg-blue-600 hover:bg-blue-700 text-white py-4 rounded-2xl font-semibold text-lg transition"
               >
                 Apply Now
               </button>
             </div>
           </div>
         ) : (
-          <div className="h-full flex items-center justify-center text-gray-400 text-center">
-            <p>Select a job from the list to see details</p>
+          <div className="h-full flex items-center justify-center text-gray-400">
+            Select a job to see details
           </div>
         )}
       </div>
 
-      {/* Floating Chat Bot Button */}
-      <button
-        onClick={() => setShowChat(!showChat)}
-        className="fixed bottom-6 right-6 w-14 h-14 bg-blue-600 hover:bg-blue-700 text-white rounded-full flex items-center justify-center shadow-lg text-2xl z-50"
-      >
-        💬
-      </button>
+      {/* Login / Register Modal */}
+      {showAuthModal && (
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50">
+          <div className="bg-white rounded-3xl p-8 w-full max-w-md">
+            <h2 className="text-2xl font-bold text-center mb-6">
+              {isLoginMode ? 'Login to Apply' : 'Create Account'}
+            </h2>
 
-      {/* Chat Bot Modal */}
-      {showChat && (
-        <div className="fixed bottom-24 right-6 w-80 bg-white rounded-3xl shadow-2xl border z-50 overflow-hidden">
-          <div className="bg-blue-600 text-white p-4 flex justify-between items-center">
-            <h3>Job Assistant Chatbot</h3>
-            <button onClick={() => setShowChat(false)} className="text-xl">×</button>
-          </div>
-          <div className="h-80 p-4 overflow-y-auto bg-gray-50">
-            <p className="text-gray-500 text-sm">Hello! How can I help you today? Ask me about jobs, salary, or application process.</p>
-          </div>
-          <div className="p-4 border-t flex gap-2">
-            <input
-              type="text"
-              value={chatMessage}
-              onChange={(e) => setChatMessage(e.target.value)}
-              placeholder="Type your message..."
-              className="flex-1 border rounded-2xl px-4 py-3 focus:outline-none"
-              onKeyPress={(e) => e.key === 'Enter' && sendChatMessage()}
-            />
-            <button 
-              onClick={sendChatMessage}
-              className="bg-blue-600 text-white px-6 rounded-2xl"
-            >
-              Send
-            </button>
-          </div>
-        </div>
-      )}
+            <div className="space-y-4">
+              {!isLoginMode && (
+                <input 
+                  type="text" 
+                  placeholder="Full Name" 
+                  value={name} 
+                  onChange={(e) => setName(e.target.value)} 
+                  className="w-full px-4 py-3 border rounded-2xl" 
+                />
+              )}
 
-      {/* Post Job Modal */}
-      {showPostJob && (
-        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
-          <div className="bg-white rounded-3xl p-8 w-full max-w-lg">
-            <h2 className="text-2xl font-bold mb-4">Post a New Job</h2>
-            <p className="text-gray-600 mb-8">This feature will be fully connected to your backend soon.</p>
-            <button 
-              onClick={() => setShowPostJob(false)}
-              className="w-full py-3 bg-gray-800 text-white rounded-2xl font-medium"
-            >
-              Close
-              ijnnpnipn
-            </button>
+              <input 
+                type="email" 
+                placeholder="Email Address" 
+                value={email} 
+                onChange={(e) => setEmail(e.target.value)} 
+                className="w-full px-4 py-3 border rounded-2xl" 
+              />
+
+              <input 
+                type="password" 
+                placeholder="Password" 
+                value={password} 
+                onChange={(e) => setPassword(e.target.value)} 
+                className="w-full px-4 py-3 border rounded-2xl" 
+              />
+
+              {!isLoginMode && (
+                <div>
+                  <p className="text-sm text-gray-600 mb-2">Register as:</p>
+                  <div className="flex gap-3">
+                    <button 
+                      onClick={() => setRole('seeker')} 
+                      className={`flex-1 py-3 rounded-2xl font-medium ${role === 'seeker' ? 'bg-blue-600 text-white' : 'border'}`}
+                    >
+                      Job Seeker
+                    </button>
+                    <button 
+                      onClick={() => setRole('employer')} 
+                      className={`flex-1 py-3 rounded-2xl font-medium ${role === 'employer' ? 'bg-blue-600 text-white' : 'border'}`}
+                    >
+                      Employer
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              <button 
+                onClick={handleAuth}
+                className="w-full bg-blue-600 text-white py-4 rounded-2xl font-semibold mt-6"
+              >
+                {isLoginMode ? 'Login' : 'Create Account'}
+              </button>
+
+              <p className="text-center text-sm">
+                {isLoginMode ? "Don't have an account? " : "Already have an account? "}
+                <span 
+                  onClick={() => setIsLoginMode(!isLoginMode)} 
+                  className="text-blue-600 cursor-pointer font-medium"
+                >
+                  {isLoginMode ? 'Register' : 'Login'}
+                </span>
+              </p>
+            </div>
+
+            <button onClick={() => setShowAuthModal(false)} className="mt-6 text-gray-500 w-full">Close</button>
           </div>
         </div>
       )}
