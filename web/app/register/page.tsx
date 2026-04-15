@@ -153,6 +153,8 @@ export default function RegisterPage() {
             Login here
           </Link>
           aafafaf;
+          dvdvd;
+          cucuc;
         </p>
       </div>
     </div>
