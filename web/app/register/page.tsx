@@ -155,6 +155,8 @@ export default function RegisterPage() {
           aafafaf;
           dvdvd;
           cucuc;
+          cdcdcdc;
+          csscscd;
         </p>
       </div>
     </div>
