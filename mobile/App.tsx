@@ -19,5 +19,6 @@ export default function App() {
       scvsvsvs;
     </NavigationContainer>
     ihohhoi;
+    dcscvsv;
   );
 }
