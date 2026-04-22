@@ -20,5 +20,6 @@ export default function App() {
     </NavigationContainer>
     ihohhoi;
     dcscvsv;
+    scscscsdc;
   );
 }
