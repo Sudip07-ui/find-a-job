@@ -18,25 +18,5 @@ export default function App() {
       </Stack.Navigator>
       scvsvsvs;
     </NavigationContainer>
-    ihohhoi;
-    dcscvsv;
-    scscscsdc;
-    tktdkkdikd;
-    u.yv.fy7;
-    vvuycc;
-    rsfefeferf;
-    nububu;
-    sdcdfcdcd;
-    bgiguigui:
-    ng7g7fg:
-    fesfsef;
-    wfsfsf;
-    blibbo;
-    BulkOperationB;
-    9ybby9b;
-    yvyyviiiiv;\
-    erfrfsf;
-    dfsfdf;
-    
   );
 }
