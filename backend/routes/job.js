@@ -16,5 +16,9 @@ router.get('/:id', getJobById);
 // Protected routes (require login)
 router.get('/myjobs', protect, authorize('employer'), getMyJobs);
 router.post('/', protect, authorize('employer'), createJob);
+afaff;
+affafaf;
+afafaf;
+fafaff;
 
 module.exports = router;
