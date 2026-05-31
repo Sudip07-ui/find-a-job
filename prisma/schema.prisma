@@ -1,0 +1,298 @@
+generator client {
+  provider = "prisma-client-js"
+  previewFeatures = ["postgresqlExtensions", "relationJoins"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+  extensions = [pgvector(map: "vector")]
+}
+
+enum UserRole { ADMIN SEEKER EMPLOYER }
+enum JobStatus { DRAFT ACTIVE PAUSED CLOSED FILLED EXPIRED }
+enum JobType { FULL_TIME PART_TIME CONTRACT FREELANCE INTERNSHIP }
+enum WorkMode { REMOTE HYBRID ONSITE }
+enum ExperienceLevel { ENTRY MID SENIOR LEAD EXECUTIVE }
+enum ApplicationStatus { APPLIED SCREENING INTERVIEW OFFER HIRED REJECTED WITHDRAWN }
+enum NotificationType { APPLICATION_UPDATE NEW_MESSAGE JOB_MATCH INTERVIEW_SCHEDULED OFFER_RECEIVED PROFILE_VIEWED JOB_EXPIRING SYSTEM }
+enum SubscriptionPlan { FREE STARTER PROFESSIONAL ENTERPRISE }
+enum SubscriptionStatus { ACTIVE CANCELLED PAST_DUE EXPIRED }
+
+model User {
+  id            String    @id @default(cuid())
+  clerkId       String    @unique
+  email         String    @unique
+  emailVerified DateTime?
+  role          UserRole  @default(SEEKER)
+  seekerProfile SeekerProfile?
+  company       Company?
+  sentMessages  Message[]
+  notifications Notification[]
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  @@index([clerkId])
+  @@index([email])
+  @@index([role])
+  @@map("users")
+}
+
+model SeekerProfile {
+  id                    String   @id @default(cuid())
+  userId                String   @unique
+  user                  User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  fullName              String
+  headline              String?
+  summary               String?  @db.Text
+  avatarUrl             String?
+  phone                 String?
+  location              String?
+  skills                String[]
+  experience            Json[]
+  education             Json[]
+  certifications        Json[]
+  languages             Json[]
+  salaryExpectationMin  Int?
+  salaryExpectationMax  Int?
+  salaryCurrency        String   @default("USD")
+  preferredWorkMode     WorkMode?
+  preferredLocations    String[]
+  availability          String?
+  willingToRelocate     Boolean  @default(false)
+  resumeUrl             String?
+  resumeOriginalName    String?
+  portfolioUrl          String?
+  linkedinUrl           String?
+  githubUrl             String?
+  vectorEmbedding       Unsupported("vector(1536)")?
+  searchKeywords        String[]
+  isPublic              Boolean  @default(true)
+  isOpenToWork          Boolean  @default(true)
+  applications          Application[]
+  savedJobs             SavedJob[]
+  profileViews          Int      @default(0)
+  lastActiveAt          DateTime @default(now())
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+  @@index([skills])
+  @@index([location])
+  @@index([isPublic])
+  @@index([isOpenToWork])
+  @@map("seeker_profiles")
+}
+
+model Company {
+  id              String   @id @default(cuid())
+  userId          String   @unique
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name            String
+  slug            String   @unique
+  logoUrl         String?
+  website         String?
+  description     String?  @db.Text
+  industry        String?
+  size            String?
+  foundedYear     Int?
+  headquarters    String?
+  locations       String[]
+  linkedinUrl     String?
+  twitterUrl      String?
+  verified        Boolean  @default(false)
+  verificationDoc String?
+  jobs            Job[]
+  savedCandidates SavedCandidate[]
+  subscription    Subscription?
+  totalJobsPosted Int      @default(0)
+  totalHires      Int      @default(0)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  @@index([slug])
+  @@index([industry])
+  @@index([verified])
+  @@map("companies")
+}
+
+model Job {
+  id                  String          @id @default(cuid())
+  companyId           String
+  company             Company         @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  title               String
+  slug                String          @unique
+  description         String          @db.Text
+  shortDescription    String?         @db.Text
+  requirements        String[]
+  responsibilities    String[]
+  skillsRequired      String[]
+  niceToHave          String[]
+  experienceLevel     ExperienceLevel
+  jobType             JobType
+  workMode            WorkMode
+  location            String?
+  isRemoteFriendly    Boolean         @default(false)
+  salaryMin           Int?
+  salaryMax           Int?
+  salaryCurrency      String          @default("USD")
+  salaryPeriod        String          @default("yearly")
+  benefits            String[]
+  equity              Boolean         @default(false)
+  applicationEmail    String?
+  applicationUrl      String?
+  customQuestions     Json[]
+  autoReplyMessage    String?         @db.Text
+  status              JobStatus       @default(DRAFT)
+  featured            Boolean         @default(false)
+  urgent              Boolean         @default(false)
+  vectorEmbedding     Unsupported("vector(1536)")?
+  searchKeywords      String[]
+  viewCount           Int             @default(0)
+  applicationCount    Int             @default(0)
+  clickThroughRate    Float           @default(0)
+  avgMatchScore       Float           @default(0)
+  publishedAt         DateTime?
+  expiresAt           DateTime?
+  createdAt           DateTime        @default(now())
+  updatedAt           DateTime        @updatedAt
+  applications        Application[]
+  savedBy             SavedJob[]
+  @@index([companyId])
+  @@index([status])
+  @@index([slug])
+  @@index([skillsRequired])
+  @@index([location])
+  @@index([experienceLevel])
+  @@index([jobType])
+  @@index([workMode])
+  @@index([featured])
+  @@index([publishedAt])
+  @@index([expiresAt])
+  @@map("jobs")
+}
+
+model Application {
+  id                String            @id @default(cuid())
+  jobId             String
+  job               Job               @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  seekerId          String
+  seeker            SeekerProfile     @relation(fields: [seekerId], references: [id], onDelete: Cascade)
+  coverLetter       String?           @db.Text
+  resumeUrl         String?
+  answers           Json[]
+  aiMatchScore      Float?
+  aiAssessment      Json?
+  status            ApplicationStatus @default(APPLIED)
+  statusHistory     Json[]
+  employerNotes     String?           @db.Text
+  rating            Int?
+  tags              String[]
+  interviewScheduledAt DateTime?
+  interviewType     String?
+  interviewLink     String?
+  messages          Message[]
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+  @@unique([jobId, seekerId])
+  @@index([jobId])
+  @@index([seekerId])
+  @@index([status])
+  @@index([aiMatchScore])
+  @@index([createdAt])
+  @@map("applications")
+}
+
+model Message {
+  id              String        @id @default(cuid())
+  applicationId   String
+  application     Application   @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  senderId        String
+  sender          User          @relation(fields: [senderId], references: [id], onDelete: Cascade)
+  content         String        @db.Text
+  attachments     Json[]
+  readAt          DateTime?
+  createdAt       DateTime      @default(now())
+  @@index([applicationId])
+  @@index([senderId])
+  @@index([createdAt])
+  @@map("messages")
+}
+
+model Notification {
+  id          String           @id @default(cuid())
+  userId      String
+  user        User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type        NotificationType
+  title       String
+  content     String           @db.Text
+  data        Json?
+  actionUrl   String?
+  read        Boolean          @default(false)
+  createdAt   DateTime         @default(now())
+  @@index([userId])
+  @@index([read])
+  @@index([createdAt])
+  @@map("notifications")
+}
+
+model SavedJob {
+  seekerId    String
+  seeker      SeekerProfile @relation(fields: [seekerId], references: [id], onDelete: Cascade)
+  jobId       String
+  job         Job           @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  notes       String?       @db.Text
+  createdAt   DateTime      @default(now())
+  @@id([seekerId, jobId])
+  @@map("saved_jobs")
+}
+
+model SavedCandidate {
+  companyId   String
+  company     Company       @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  seekerId    String
+  seeker      SeekerProfile @relation(fields: [seekerId], references: [id], onDelete: Cascade)
+  notes       String?       @db.Text
+  tags        String[]
+  createdAt   DateTime      @default(now())
+  @@id([companyId, seekerId])
+  @@map("saved_candidates")
+}
+
+model Subscription {
+  id                    String             @id @default(cuid())
+  companyId             String             @unique
+  company               Company            @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  plan                  SubscriptionPlan   @default(FREE)
+  status                SubscriptionStatus @default(ACTIVE)
+  stripeCustomerId      String?
+  stripeSubscriptionId  String?
+  stripePriceId         String?
+  jobPostingsLimit      Int                @default(3)
+  jobPostingsUsed       Int                @default(0)
+  featuredJobsLimit     Int                @default(0)
+  featuredJobsUsed      Int                @default(0)
+  teamMembersLimit      Int                @default(1)
+  currentPeriodStart    DateTime?
+  currentPeriodEnd      DateTime?
+  cancelAtPeriodEnd     Boolean            @default(false)
+  createdAt             DateTime           @default(now())
+  updatedAt             DateTime           @updatedAt
+  @@index([stripeCustomerId])
+  @@index([stripeSubscriptionId])
+  @@map("subscriptions")
+}
+
+model ActivityLog {
+  id          String   @id @default(cuid())
+  userId      String?
+  entityType  String
+  entityId    String?
+  action      String
+  metadata    Json?
+  ipAddress   String?
+  userAgent   String?
+  createdAt   DateTime @default(now())
+  @@index([userId])
+  @@index([entityType])
+  @@index([entityId])
+  @@index([createdAt])
+  @@map("activity_logs")
+}
